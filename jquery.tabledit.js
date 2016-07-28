@@ -4,11 +4,17 @@
  * Licensed under MIT (https://github.com/markcell/jQuery-Tabledit/blob/master/LICENSE)
  */
 
-/**
+/*!
  * @description Inline editor for HTML tables compatible with Bootstrap
  * @version 1.2.3
  * @author Celso Marques
  */
+/**
+ * @description Inline editor for HTML tables compatible with Bootstrap
+ * @version 1.2.3
+ * @author Miquel Prou
+ */
+
 
 if (typeof jQuery === 'undefined') {
   throw new Error('Tabledit requires jQuery library.');
@@ -23,6 +29,8 @@ if (typeof jQuery === 'undefined') {
         }
 
         var $table = this;
+
+        var $dateTimeInstance = null;
 
         var defaults = {
             url: window.location.href,
@@ -86,12 +94,13 @@ if (typeof jQuery === 'undefined') {
         var Draw = {
             columns: {
                 identifier: function() {
+
                     // Hide identifier column.
                     if (settings.hideIdentifier) {
-                        $table.find('th:nth-child(' + parseInt(settings.columns.identifier[0]) + 1 + '), tbody td:nth-child(' + parseInt(settings.columns.identifier[0]) + 1 + ')').hide();
+                        $table.find('th:nth-child(' + parseInt(settings.columns.identifier[0]) + 1 + '), > tbody > tr > td:nth-child(' + parseInt(settings.columns.identifier[0]) + 1 + ')').hide();
                     }
 
-                    var $td = $table.find('tbody td:nth-child(' + (parseInt(settings.columns.identifier[0]) + 1) + ')');
+                    var $td = $table.find('> tbody > tr > td:nth-child(' + (parseInt(settings.columns.identifier[0]) + 1) + ')');
 
                     $td.each(function() {
                         // Create hidden input with row identifier.
@@ -106,16 +115,23 @@ if (typeof jQuery === 'undefined') {
                     });
                 },
                 editable: function() {
-                    for (var i = 0; i < settings.columns.editable.length; i++) {
-                        var $td = $table.find('tbody td:nth-child(' + (parseInt(settings.columns.editable[i][0]) + 1) + ')');
 
-                        $td.each(function() {
+
+
+                    for (var i = 0; i < settings.columns.editable.length; i++) {
+                        // var $td = $table.find('> tbody > tr > td:nth-child(' + (parseInt(settings.columns.editable[i][0]) + 1) + ')');
+
+                        for (var j = 0; j < $table.children('tbody').children('tr').length; j++) {
+                            var $td = $table.children('tbody').children('tr:eq(' + j + ')').find('td:not(".nested")');
+
+                            var $this = $td.eq(parseInt(settings.columns.editable[i][0]));
+
                             // Get text of this cell.
-                            var text = $(this).text();
+                            var text = $this.text();
 
                             // Add pointer as cursor.
                             if (!settings.editButton) {
-                                $(this).css('cursor', 'pointer');
+                                $this.css('cursor', 'pointer');
                             }
 
                             // Create span element.
@@ -123,23 +139,22 @@ if (typeof jQuery === 'undefined') {
                             var input = "";
                             // Check if exists the third parameter of editable array.
                             // switch the third parameter to test for input type default is text
-                            switch(settings.columns.editable[i][2])
-                            {
+                            switch (settings.columns.editable[i][2]) {
                                 case "textarea":
                                     input = '<textarea ';
                                     //each item in 4th object becomes attributes in select
-                                    $.each(settings.columns.editable[i][3], function(index, value) {
+                                    $.each(settings.columns.editable[i][3], function (index, value) {
                                         input += index + '="' + value + '" ';
                                     });
-                                    input += 'class="tabledit-input ' + settings.inputClass + '" name="' + settings.columns.editable[i][1] + '" style="display: none;" disabled>' + $(this).text()  + '</textarea>';
-                                    
+                                    input += 'class="tabledit-input ' + settings.inputClass + '" name="' + settings.columns.editable[i][1] + '" style="display: none;" disabled>' + $this.text() + '</textarea>';
+
                                     break;
                                 case "select":
                                     // Create select element.
                                     input = '<select class="tabledit-input ' + settings.inputClass + '" name="' + settings.columns.editable[i][1] + '" style="display: none;" disabled>';
 
                                     // Create options for select element.
-                                    $.each(settings.columns.editable[i][3], function(index, value) {
+                                    $.each(settings.columns.editable[i][3], function (index, value) {
                                         if (text === value) {
                                             input += '<option value="' + index + '" selected>' + value + '</option>';
                                         } else {
@@ -149,19 +164,29 @@ if (typeof jQuery === 'undefined') {
 
                                     // Create last piece of select element.
                                     input += '</select>';
-                                    
+
                                     break;
-                                    
+                                case "datetime":
+                                    //Create input structure
+                                    input = '<div class="input-group col-xs-12 ' + settings.columns.editable[i][3] + '" style="display: none;">' +
+                                        '<input type="text" class="tabledit-input ' + settings.inputClass + '" name="' + settings.columns.editable[i][1] + '" value="' + text + '" disabled/>' +
+                                        '<span class="input-group-addon">' +
+                                        '<span class="glyphicon glyphicon-calendar"></span>' +
+                                        '</span></div>';
+
+                                    break;
+
                                 default:
                                     // Create text input element.
-                                    input = '<input class="tabledit-input ' + settings.inputClass + '" type="text" name="' + settings.columns.editable[i][1] + '" value="' + $(this).text() + '" style="display: none;" disabled>';
+                                    input = '<input class="tabledit-input ' + settings.inputClass + '" type="text" name="' + settings.columns.editable[i][1] + '" value="' + $this.text() + '" style="display: none;" disabled>';
                                     break;
                             }
 
                             // Add elements and class "view" to table cell.
-                            $(this).html(span + input);
-                            $(this).addClass('tabledit-view-mode');
-                       });
+                            $this.html(span + input);
+                            $this.addClass('tabledit-view-mode');
+                            // });
+                        }
                     }
                 },
                 toolbar: function() {
@@ -234,17 +259,35 @@ if (typeof jQuery === 'undefined') {
                     $tr.find('button.tabledit-save-button').hide();
                     $tr.find('button.tabledit-edit-button').removeClass('active').blur();
                 }
+                //Check datetime and hide container
+                if (DateTime.has()) {
+                    if ($(td).find('div').hasClass(DateTime.getName())) {
+                        $(td).find('div').hide();
+                    }
+                }
             },
             edit: function(td) {
                 Delete.reset(td);
                 // Get table row.
                 var $tr = $(td).parent('tr');
                 // Enable identifier.
-                $tr.find('.tabledit-input.tabledit-identifier').prop('disabled', false);
+                if ($tr.find('.tabledit-input.tabledit-identifier').length > 0) {
+                    $tr.find('.tabledit-input.tabledit-identifier').prop('disabled', false);
+                } else {
+                    $tr.parent().parent().parent().parent().find('.tabledit-input.tabledit-identifier').prop('disabled', false);
+                }
                 // Hide span element.
                 $(td).find('.tabledit-span').hide();
                 // Get input element.
                 var $input = $(td).find('.tabledit-input');
+
+                //Check datetime and show contanier
+                if (DateTime.has()) {
+                    if ($input.parent().hasClass(DateTime.getName())) {
+                        $input.parent().show();
+                    }
+                }
+
                 // Enable and show input element.
                 $input.prop('disabled', false).show();
                 // Focus on input element.
@@ -308,6 +351,28 @@ if (typeof jQuery === 'undefined') {
 
                 // Set last edited column and row.
                 $lastEditedRow = $(td).parent('tr');
+            },
+            submitDateTime: function($ele, date) {
+                // Get element id, attribute name and value.
+                var data = new Object();
+                data['id'] = $ele.parent().parent().attr('id');
+                var name = $ele.children('input').attr('name');
+                data[name] = date.format('YYYY/MM/DD');
+
+                // Send AJAX request to server.
+                var ajaxResult = ajax(settings.buttons.edit.action, $.param(data));
+
+                if (ajaxResult === false) {
+                    return;
+                }
+                //Get input element.
+                var $input = $ele.find('.tabledit-input');
+                // Set span text with input/select new value.
+                $ele.parent().find('.tabledit-span').text($input.val());
+                // Change to view mode.
+                Mode.view($ele.parent().get());
+                // Set last edited column and row.
+                $lastEditedRow = $ele.parent().parent('tr');
             }
         };
 
@@ -377,15 +442,67 @@ if (typeof jQuery === 'undefined') {
                 $lastRestoredRow = $(td).parent('tr');
             }
         };
+        /**
+         * Available utils for work with eonasdan datetimepicker.
+         *
+         * @type object
+         */
+        var DateTime = {
+            has: function() {
+                // Return true if columns has datetime element
+                var has = false;
+                for (var i = 0; i < settings.columns.editable.length; i++) {
+                    has = has || (settings.columns.editable[i][2] == 'datetime');
+                }
+                return has;
+            },
 
+            getName: function() {
+                // Return class name datetime element
+                var name;
+                for (var i = 0; i < settings.columns.editable.length; i++) {
+                    if (settings.columns.editable[i][2] == 'datetime') {
+                        name = settings.columns.editable[i][3];
+                    }
+                }
+                return name;
+            },
+            
+            getFormat: function () {
+                //Return format date
+                var format;
+                for (var i = 0; i < settings.columns.editable.length; i++) {
+                    if (settings.columns.editable[i][2] == 'datetime') {
+                        format = settings.columns.editable[i][4];
+                    }
+                }
+                return format;
+            },
+
+            launch: function(name) {
+                // Return unique instance for all table
+                var instance =  $('.' + name).datetimepicker({
+                    viewMode: 'days',
+                    format: this.getFormat()
+                });
+                return instance;
+            }
+        }
         /**
          * Send AJAX request to server.
          *
          * @param {string} action
+         * @param {string} serialized
+         * @returns {*}
          */
-        function ajax(action)
+        function ajax(action, serialized = false)
         {
-            var serialize = $table.find('.tabledit-input').serialize() + '&action=' + action;
+            // Change serialized attr if has datetime
+            if (!serialized) {
+                var serialize = $table.find('.tabledit-input').serialize() + '&action=' + action;
+            } else {
+                var serialize = serialized + '&action=' + action;
+            }
 
             var result = settings.onAjax(action, serialize);
 
@@ -427,6 +544,10 @@ if (typeof jQuery === 'undefined') {
         Draw.columns.identifier();
         Draw.columns.editable();
         Draw.columns.toolbar();
+        // Launch http://eonasdan.github.io/bootstrap-datetimepicker/
+        if (DateTime.has()) {
+            $dateTimeInstance = DateTime.launch(DateTime.getName());
+        }
 
         settings.onDraw();
 
@@ -561,6 +682,16 @@ if (typeof jQuery === 'undefined') {
                 if (event.handled !== true) {
                     // Submit and update the column.
                     Edit.submit($(this).parent('td'));
+
+                    event.handled = true;
+                }
+            });
+            /**
+             * Change datetime when fire eonasdan datetimepicker dp.change event
+             */
+            $dateTimeInstance.on('dp.change', function (event) {
+                if (event.handled !== true) {
+                    Edit.submitDateTime($(this), event.date);
 
                     event.handled = true;
                 }

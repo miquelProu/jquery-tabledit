@@ -1,3 +1,9 @@
+v1.2.5 (2016/07/28)
+-------------------
+- Integrate datetime picker (https://github.com/Eonasdan/bootstrap-datetimepicker)
+- Changed the options to allow 'select', 'text', 'textarea', 'datetime', the four parameter becomes the name of the datepicker element class and the five parameter becomes a datetime format
+- Added a new featured, you can nested 'table' on 'td'.
+
 v1.2.4 (2016/06/17)
 -------------------
 - Changed the options to allow 'select', 'text', and 'textarea' input, the fourth parameter becomes the number of rows if textarea, straight json for select options
